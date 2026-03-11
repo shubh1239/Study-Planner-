@@ -8,4 +8,5 @@ urlpatterns = [
     path("sessions/<int:session_id>/complete/", views.mark_completed, name="mark_completed"),
     path("progress/",                           views.progress,       name="progress"),
     path("progress/daily/",                     views.daily_progress, name="daily_progress"),
+    path("timetable/export_pdf/",               views.export_pdf,     name="export_pdf"),
 ]
