@@ -7,7 +7,7 @@
     <title>StudyBuddy 🎯</title>
     <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=Architects+Daughter&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+    <link rel="stylesheet" href="{% static 'css/style.css' %}?v=6">
 </head>
 <body>
 
@@ -152,9 +152,12 @@
                         <i class="fas fa-calendar-alt icon-sky"></i>
                         My Study Schedule
                     </div>
-                    <span class="schedule-status" id="scheduleStatus">
-                        Awaiting plan ✨
-                    </span>
+                    <div style="display:flex; gap:0.5rem; align-items:center;">
+                        <button onclick="regeneratePlan()" class="btn-export" id="regenBtn">
+                            <i class="fas fa-rotate-right"></i> Regenerate
+                        </button>
+                        <span class="schedule-status" id="scheduleStatus">Awaiting plan ✨</span>
+                    </div>
                 </div>
                 <div class="card-body" id="timetableContainer">
                     <div class="empty-schedule">
@@ -168,6 +171,6 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="{% static 'js/script.js' %}"></script>
+    <script src="{% static 'js/script.js' %}?v=6"></script>
 </body>
 </html>

@@ -288,3 +288,23 @@ def export_pdf(request):
     response = HttpResponse(buffer, content_type="application/pdf")
     response["Content-Disposition"] = f'attachment; filename="studybuddy_plan_{request.user.username}.pdf"'
     return response
+
+# ─── Subject Detail (Edit / Delete) ───────────────────────────
+@api_view(["GET", "PUT", "DELETE"])
+@permission_classes([IsAuthenticated])
+def subject_detail(request, subject_id):
+    subject = get_object_or_404(Subject, id=subject_id, user=request.user)
+
+    if request.method == "GET":
+        return Response(SubjectSerializer(subject).data)
+
+    if request.method == "PUT":
+        serializer = SubjectSerializer(subject, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    if request.method == "DELETE":
+        subject.delete()
+        return Response({"message": "Subject deleted"}, status=status.HTTP_204_NO_CONTENT)

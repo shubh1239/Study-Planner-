@@ -69,79 +69,93 @@ document.addEventListener("DOMContentLoaded", function () {
 
 
 async function loadSessions() {
-    const res = await fetch("/api/sessions/");
-    if (!res.ok) return;
+    try {
+        const res = await fetch("/api/sessions/");
+        if (!res.ok) return;
 
-    const sessions  = await res.json();
-    const total     = sessions.length;
-    const completed = sessions.filter(s => s.completed).length;
-    const percent   = total ? Math.round(completed / total * 100) : 0;
+        const sessions  = await res.json();
+        const total     = sessions.length;
+        const completed = sessions.filter(s => s.completed).length;
+        const percent   = total ? Math.round(completed / total * 100) : 0;
 
-    // Update stats
-    document.getElementById("statTotal").textContent   = total;
-    document.getElementById("statDone").textContent    = completed;
-    document.getElementById("statPercent").textContent = percent + "%";
-    document.getElementById("mainProgressBar").style.width = percent + "%";
-    document.getElementById("progressLabel").textContent = total
-        ? `${completed} of ${total} sessions completed — keep going! 💪`
-        : "Start by adding a subject below";
+        document.getElementById("statTotal").textContent   = total;
+        document.getElementById("statDone").textContent    = completed;
+        document.getElementById("statPercent").textContent = percent + "%";
+        document.getElementById("mainProgressBar").style.width = percent + "%";
+        document.getElementById("progressLabel").textContent = total
+            ? `${completed} of ${total} sessions completed — keep going! 💪`
+            : "Start by adding a subject below";
 
-    // Mission List
-    const list = document.getElementById("missionList");
-    list.innerHTML = "";
+        const list = document.getElementById("missionList");
+        list.innerHTML = "";
 
-    const uniqueBySubject = {};
-    sessions.forEach(s => {
-        if (!uniqueBySubject[s.subject_name]) uniqueBySubject[s.subject_name] = s;
-    });
+        const seen     = {};
+        const subjects = [];
+        sessions.forEach(s => {
+            if (!seen[s.subject_id]) {
+                seen[s.subject_id] = true;
+                subjects.push(s);
+            }
+        });
 
-    const subjects = Object.values(uniqueBySubject);
-    if (subjects.length === 0) {
-        list.innerHTML = `
-            <li class="mission-empty">
-                <i class="fas fa-seedling"></i>
-                <p>No subjects yet.<br>Add one above to get started! 🌱</p>
-            </li>`;
-        return;
-    }
+        if (subjects.length === 0) {
+            list.innerHTML = `
+                <li class="mission-empty">
+                    <i class="fas fa-seedling"></i>
+                    <p>No subjects yet.<br>Add one above to get started! 🌱</p>
+                </li>`;
+            return;
+        }
 
-    subjects.forEach(s => {
-        const li = document.createElement("li");
-        li.className = "mission-item" + (s.completed ? " done" : "");
+        subjects.forEach(s => {
+            const li = document.createElement("li");
+            li.className = "mission-item" + (s.completed ? " done" : "");
+            li.setAttribute("data-sid", String(s.subject_id));
 
-        const diffLabel = ["", "Easy", "Medium", "Hard"][s.difficulty || 2];
-        const diffClass = ["", "badge-easy", "badge-med", "badge-hard"][s.difficulty || 2];
-        const urgClass  = {
-            "Critical": "badge-critical",
-            "High":     "badge-high",
-            "Medium":   "badge-medium",
-            "Low":      "badge-low",
-        }[s.priority_label] || "badge-low";
+            const diffLabel = ["", "Easy", "Medium", "Hard"][s.difficulty || 2];
+            const diffClass = ["", "badge-easy", "badge-med", "badge-hard"][s.difficulty || 2];
+            const urgClass  = {
+                "Critical": "badge-critical",
+                "High":     "badge-high",
+                "Medium":   "badge-medium",
+                "Low":      "badge-low",
+            }[s.priority_label] || "badge-low";
 
-        li.innerHTML = `
-            <div class="mission-left">
-                <input type="checkbox" class="mission-check"
-                    ${s.completed ? "checked" : ""}
-                    onchange="markCompleted(${s.id}, this)">
-                <span class="mission-name">${s.subject_name}</span>
-                <span class="badge ${urgClass}">${s.priority_label || "Low"}</span>
-            </div>
-            <div class="mission-right">
-                <span class="mission-time">${s.notes || ""}</span>
-                <span class="mission-date">${s.date}</span>
-                <span class="badge ${diffClass}">${diffLabel}</span>
-            </div>`;
-        list.appendChild(li);
-    });
+            li.innerHTML = `
+                <div class="mission-left">
+                    <input type="checkbox" class="mission-check"
+                        ${s.completed ? "checked" : ""}
+                        onchange="markCompleted(${s.id}, this)">
+                    <span class="mission-name">${s.subject_name}</span>
+                    <span class="badge ${urgClass}">${s.priority_label || "Low"}</span>
+                </div>
+                <div class="mission-right">
+                    <span class="mission-time">${s.notes || ""}</span>
+                    <span class="mission-date">${s.date}</span>
+                    <span class="badge ${diffClass}">${diffLabel}</span>
+                    <button onclick="editSubject(${s.subject_id}, '${s.subject_name}', ${s.difficulty || 2})"
+                        class="icon-btn edit-btn" title="Edit">
+                        <i class="fas fa-pen"></i>
+                    </button>
+                    <button onclick="deleteSubject(${s.subject_id})"
+                        class="icon-btn delete-btn" title="Delete">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>`;
+            list.appendChild(li);
+        });
 
-    // Schedule status
-    const today     = new Date().toISOString().slice(0, 10);
-    const todaySess = sessions.filter(s => s.date === today);
-    const statusEl  = document.getElementById("scheduleStatus");
-    if (statusEl) {
-        statusEl.textContent = todaySess.length > 0
-            ? `Today: ${todaySess.filter(s => s.completed).length}/${todaySess.length} done 🎯`
-            : total > 0 ? `${total} sessions scheduled 📅` : "Awaiting plan ✨";
+        const today     = new Date().toISOString().slice(0, 10);
+        const todaySess = sessions.filter(s => s.date === today);
+        const statusEl  = document.getElementById("scheduleStatus");
+        if (statusEl) {
+            statusEl.textContent = todaySess.length > 0
+                ? `Today: ${todaySess.filter(s => s.completed).length}/${todaySess.length} done 🎯`
+                : total > 0 ? `${total} sessions scheduled 📅` : "Awaiting plan ✨";
+        }
+
+    } catch (err) {
+        console.error("loadSessions error:", err);
     }
 }
 
@@ -242,6 +256,113 @@ async function markCompleted(sessionId, checkbox) {
         }
     } catch (err) {
         checkbox.checked = !checkbox.checked;
+    }
+}
+
+
+async function deleteSubject(subjectId) {
+    if (!confirm("Delete this subject? 🗑️")) return;
+
+    // Remove from UI instantly
+    const li = document.querySelector(`[data-sid="${String(subjectId)}"]`);
+    if (li) {
+        li.style.transition = "all 0.3s";
+        li.style.opacity    = "0";
+        li.style.transform  = "translateX(20px)";
+        setTimeout(() => li.remove(), 300);
+    }
+
+    // Clear timetable instantly
+    document.getElementById("timetableContainer").innerHTML = `
+        <div class="empty-schedule">
+            <i class="fas fa-calendar-alt"></i>
+            <p>Subject deleted! Click <strong>Regenerate</strong><br>to refresh your schedule 🔄</p>
+        </div>`;
+
+    setTimeout(() => {
+        const remaining = document.querySelectorAll("#missionList .mission-item").length;
+        if (remaining === 0) {
+            document.getElementById("missionList").innerHTML = `
+                <li class="mission-empty">
+                    <i class="fas fa-seedling"></i>
+                    <p>No subjects yet.<br>Add one above to get started! 🌱</p>
+                </li>`;
+        }
+    }, 350);
+
+    try {
+        await fetch(`/api/subjects/${subjectId}/`, {
+            method: "DELETE",
+            headers: { "X-CSRFToken": getCookie("csrftoken") },
+        });
+        await loadSessions();
+    } catch (err) {
+        console.error(err);
+        await loadSessions();
+    }
+}
+
+
+async function editSubject(subjectId, currentName, currentDiff) {
+    const newName = prompt("Subject name:", currentName);
+    if (newName === null || newName.trim() === "") return;
+
+    const newDiff = prompt("Difficulty (1=Easy, 2=Medium, 3=Hard):", currentDiff);
+    if (newDiff === null) return;
+
+    const li = document.querySelector(`[data-sid="${String(subjectId)}"]`);
+    if (li) {
+        const nameEl = li.querySelector(".mission-name");
+        if (nameEl) nameEl.textContent = newName.trim();
+    }
+
+    try {
+        const res = await fetch(`/api/subjects/${subjectId}/`, {
+            method: "PUT",
+            headers: {
+                "Content-Type": "application/json",
+                "X-CSRFToken": getCookie("csrftoken"),
+            },
+            body: JSON.stringify({
+                name: newName.trim(),
+                difficulty: parseInt(newDiff),
+            }),
+        });
+        if (res.ok) {
+            await loadSessions();
+        } else {
+            const err = await res.json();
+            alert("Update failed: " + JSON.stringify(err));
+            await loadSessions();
+        }
+    } catch (err) {
+        console.error(err);
+        await loadSessions();
+    }
+}
+
+
+async function regeneratePlan() {
+    const btn = document.getElementById("regenBtn");
+    if (btn) btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generating...';
+
+    try {
+        const genRes = await fetch("/api/generate/", {
+            method: "POST",
+            headers: { "X-CSRFToken": getCookie("csrftoken") },
+        });
+
+        if (!genRes.ok) { alert("Generation failed 😢"); return; }
+
+        const data = await genRes.json();
+        if (data.timetable && data.timetable.length > 0) {
+            renderTimetable(data.timetable);
+        }
+        await loadSessions();
+    } catch (err) {
+        console.error(err);
+    } finally {
+        if (btn) btn.innerHTML = '<i class="fas fa-rotate-right"></i> Regenerate';
     }
 }
 

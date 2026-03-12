@@ -788,3 +788,18 @@ body::after {
     .approach-grid { grid-template-columns: 1fr; }
     .steps-box { grid-column: 1; }
 }
+
+.icon-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 4px 6px;
+    border-radius: 8px;
+    font-size: 0.78rem;
+    transition: all 0.2s;
+}
+
+.edit-btn   { color: var(--sky); }
+.edit-btn:hover   { background: rgba(94,184,255,0.12); }
+.delete-btn { color: var(--coral); }
+.delete-btn:hover { background: rgba(255,107,107,0.12); }
