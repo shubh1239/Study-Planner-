@@ -370,7 +370,115 @@ async function regeneratePlan() {
 function downloadPlan() {
     window.location.href = "/api/timetable/export_pdf/";
 }
+// ── CHART MODAL ───────────────────────────────────────
+let chartInstance = null;
 
+async function openChart() {
+    document.getElementById("chartModal").classList.add("open");
+    await loadChartData();
+}
+
+function closeChart(e) {
+    if (e && e.target !== document.getElementById("chartModal")) return;
+    document.getElementById("chartModal").classList.remove("open");
+}
+
+async function loadChartData() {
+    try {
+        const res = await fetch("/api/sessions/");
+        if (!res.ok) return;
+        const sessions = await res.json();
+
+        if (sessions.length === 0) return;
+
+        // Group by subject
+        const bySubject = {};
+        sessions.forEach(s => {
+            if (!bySubject[s.subject_name]) {
+                bySubject[s.subject_name] = { total: 0, completed: 0 };
+            }
+            bySubject[s.subject_name].total++;
+            if (s.completed) bySubject[s.subject_name].completed++;
+        });
+
+        const names     = Object.keys(bySubject);
+        const percents  = names.map(n =>
+            Math.round(bySubject[n].completed / bySubject[n].total * 100)
+        );
+
+        const colors = [
+            "#ff6b6b", "#52d9a6", "#5eb8ff",
+            "#ffd166", "#a78bfa", "#ff8fab",
+            "#ffa07a", "#47ffd4",
+        ];
+
+        // Overall stats
+        const total     = sessions.length;
+        const completed = sessions.filter(s => s.completed).length;
+        const percent   = total ? Math.round(completed / total * 100) : 0;
+
+        document.getElementById("mStatTotal").textContent   = total;
+        document.getElementById("mStatDone").textContent    = completed;
+        document.getElementById("mStatPending").textContent = total - completed;
+        document.getElementById("mStatPercent").textContent = percent + "%";
+        document.getElementById("chartCenterLabel").textContent = percent + "%";
+
+        // Doughnut chart
+        const ctx = document.getElementById("progressChart").getContext("2d");
+        if (chartInstance) chartInstance.destroy();
+
+        chartInstance = new Chart(ctx, {
+            type: "doughnut",
+            data: {
+                labels: names,
+                datasets: [{
+                    data: percents,
+                    backgroundColor: colors.slice(0, names.length),
+                    borderWidth: 3,
+                    borderColor: "#ffffff",
+                    hoverOffset: 8,
+                }]
+            },
+            options: {
+                cutout: "72%",
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            label: ctx => ` ${ctx.label}: ${ctx.raw}% done`
+                        }
+                    }
+                },
+                animation: {
+                    animateRotate: true,
+                    duration: 800,
+                }
+            }
+        });
+
+        // Subject bars
+        const barsEl = document.getElementById("subjectBars");
+        barsEl.innerHTML = "";
+        names.forEach((name, i) => {
+            const pct   = percents[i];
+            const color = colors[i % colors.length];
+            const div   = document.createElement("div");
+            div.className = "subject-bar-item";
+            div.innerHTML = `
+                <div class="subject-bar-top">
+                    <span class="subject-bar-name">${name}</span>
+                    <span class="subject-bar-pct">${bySubject[name].completed}/${bySubject[name].total} · ${pct}%</span>
+                </div>
+                <div class="subject-bar-track">
+                    <div class="subject-bar-fill" style="width:${pct}%; background:${color};"></div>
+                </div>`;
+            barsEl.appendChild(div);
+        });
+
+    } catch (err) {
+        console.error("Chart error:", err);
+    }
+}
 
 function getCookie(name) {
     const value = `; ${document.cookie}`;

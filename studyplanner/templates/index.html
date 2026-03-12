@@ -7,7 +7,7 @@
     <title>StudyBuddy 🎯</title>
     <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=Architects+Daughter&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <link rel="stylesheet" href="{% static 'css/style.css' %}?v=6">
+    <link rel="stylesheet" href="{% static 'css/style.css' %}?v=7">
 </head>
 <body>
 
@@ -18,6 +18,9 @@
             StudyBuddy
         </div>
         <div class="nav-right">
+            <button onclick="openChart()" class="btn-export" style="margin-right:0.5rem;">
+                <i class="fas fa-chart-pie"></i> Progress
+            </button>
             <span class="nav-user">
                 <i class="fas fa-circle"></i>
                 {{ request.user.username }}
@@ -27,6 +30,50 @@
             </a>
         </div>
     </nav>
+
+    <!-- Chart Modal -->
+    <div id="chartModal" class="modal-overlay" onclick="closeChart(event)">
+        <div class="modal-box">
+            <div class="modal-header">
+                <h2 class="modal-title">📊 Progress Dashboard</h2>
+                <button onclick="closeChart()" class="modal-close">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="chart-grid">
+                    <!-- Doughnut chart -->
+                    <div class="chart-wrap">
+                        <canvas id="progressChart" width="260" height="260"></canvas>
+                        <div class="chart-center-label" id="chartCenterLabel">0%</div>
+                    </div>
+                    <!-- Per subject bars -->
+                    <div class="subject-bars" id="subjectBars">
+                        <p class="no-data-msg">No data yet — add subjects and generate a plan!</p>
+                    </div>
+                </div>
+                <!-- Overall stats row -->
+                <div class="modal-stats">
+                    <div class="modal-stat">
+                        <span class="modal-stat-num" id="mStatTotal">0</span>
+                        <span class="modal-stat-label">Total Sessions</span>
+                    </div>
+                    <div class="modal-stat">
+                        <span class="modal-stat-num" id="mStatDone">0</span>
+                        <span class="modal-stat-label">Completed</span>
+                    </div>
+                    <div class="modal-stat">
+                        <span class="modal-stat-num" id="mStatPending">0</span>
+                        <span class="modal-stat-label">Remaining</span>
+                    </div>
+                    <div class="modal-stat">
+                        <span class="modal-stat-num" id="mStatPercent">0%</span>
+                        <span class="modal-stat-label">Overall</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <div class="page-wrap">
 
@@ -171,6 +218,7 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="{% static 'js/script.js' %}?v=6"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script src="{% static 'js/script.js' %}?v=7"></script>
 </body>
 </html>
