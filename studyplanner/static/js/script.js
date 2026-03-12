@@ -1,5 +1,6 @@
 document.addEventListener("DOMContentLoaded", function () {
     loadSessions();
+    initAutocomplete();
 
     const form = document.getElementById("missionForm");
     if (!form) return;
@@ -66,6 +67,128 @@ document.addEventListener("DOMContentLoaded", function () {
         }
     });
 });
+
+
+// ── AUTOCOMPLETE ──────────────────────────────────────
+const SUBJECTS = [
+    "Physics","Chemistry","Biology","Mathematics","Statistics",
+    "Calculus","Algebra","Geometry","Trigonometry","Botany",
+    "Zoology","Microbiology","Biochemistry","Genetics","Ecology",
+    "Astronomy","Earth Science","Environmental Science","Geology","Meteorology",
+    "Computer Science","Data Structures","Algorithms","Operating Systems",
+    "Database Management","Computer Networks","Cyber Security",
+    "Artificial Intelligence","Machine Learning","Deep Learning",
+    "Data Science","Web Development","Mobile Development","Cloud Computing",
+    "Software Engineering","Computer Architecture","Theory of Computation",
+    "Compiler Design","Computer Graphics","Human Computer Interaction",
+    "Blockchain","Internet of Things",
+    "Python","Java","C Programming","C++","JavaScript","TypeScript",
+    "React","Node.js","Django","Flask","Spring Boot","PHP","Ruby",
+    "Swift","Kotlin","Go","Rust","SQL","MongoDB",
+    "Electrical Engineering","Electronics","Mechanical Engineering",
+    "Civil Engineering","Chemical Engineering","Aerospace Engineering",
+    "Biomedical Engineering","Industrial Engineering","Structural Engineering",
+    "Thermodynamics","Fluid Mechanics","Material Science","Control Systems",
+    "Signal Processing","VLSI Design","Embedded Systems","Robotics","Automation",
+    "Accountancy","Business Studies","Economics","Microeconomics","Macroeconomics",
+    "Finance","Marketing","Management","Human Resource Management",
+    "Operations Management","Business Law","Taxation","Auditing",
+    "Cost Accounting","Financial Accounting","Investment","Banking",
+    "Entrepreneurship","Supply Chain Management","International Business",
+    "History","Geography","Political Science","Sociology","Psychology",
+    "Philosophy","Anthropology","Archaeology","Public Administration",
+    "International Relations","Civics","Social Work","Criminology",
+    "Journalism","Mass Communication","Library Science",
+    "English","English Literature","Hindi","Hindi Literature","Marathi",
+    "Sanskrit","Urdu","French","German","Spanish","Japanese","Chinese",
+    "Arabic","Russian","Creative Writing","Communication Skills",
+    "Anatomy","Physiology","Pathology","Pharmacology","Nursing",
+    "Public Health","Nutrition","Dentistry","Psychiatry","Dermatology",
+    "Cardiology","Neurology",
+    "Constitutional Law","Criminal Law","Civil Law","Corporate Law",
+    "International Law","Contract Law","Property Law","Family Law",
+    "Environmental Law","Intellectual Property Law",
+    "Fine Arts","Graphic Design","Interior Design","Fashion Design",
+    "Architecture","Music","Film Studies","Photography","Animation","UI UX Design",
+    "UPSC","JEE Mathematics","JEE Physics","JEE Chemistry",
+    "NEET Biology","NEET Physics","NEET Chemistry",
+    "CAT Quantitative Aptitude","CAT Verbal Ability","CAT Logical Reasoning",
+    "GATE Computer Science","GATE Electronics","GRE","GMAT","IELTS","TOEFL",
+    "Aptitude","Logical Reasoning","Verbal Reasoning","Quantitative Reasoning",
+    "General Knowledge","Current Affairs"
+];
+
+let activeIndex = -1;
+
+function initAutocomplete() {
+    const input = document.getElementById("subjectInput");
+    const list  = document.getElementById("autocompleteList");
+    if (!input || !list) return;
+
+    input.addEventListener("input", function () {
+        const val = this.value.trim().toLowerCase();
+        list.innerHTML = "";
+        activeIndex = -1;
+
+        if (!val) { list.classList.remove("open"); return; }
+
+        const matches = SUBJECTS.filter(s =>
+            s.toLowerCase().startsWith(val)
+        ).slice(0, 8);
+
+        if (matches.length === 0) { list.classList.remove("open"); return; }
+
+        matches.forEach((subject) => {
+            const item = document.createElement("div");
+            item.className = "autocomplete-item";
+
+            const highlighted = `<span class="autocomplete-highlight">${subject.slice(0, val.length)}</span>${subject.slice(val.length)}`;
+            item.innerHTML = `<i class="fas fa-book"></i> ${highlighted}`;
+
+            item.addEventListener("mousedown", function (e) {
+                e.preventDefault();
+                input.value = subject;
+                list.classList.remove("open");
+            });
+
+            list.appendChild(item);
+        });
+
+        list.classList.add("open");
+    });
+
+    input.addEventListener("keydown", function (e) {
+        const items = list.querySelectorAll(".autocomplete-item");
+        if (!items.length) return;
+
+        if (e.key === "ArrowDown") {
+            e.preventDefault();
+            activeIndex = Math.min(activeIndex + 1, items.length - 1);
+        } else if (e.key === "ArrowUp") {
+            e.preventDefault();
+            activeIndex = Math.max(activeIndex - 1, 0);
+        } else if (e.key === "Enter" && activeIndex >= 0) {
+            e.preventDefault();
+            input.value = items[activeIndex].textContent.trim();
+            list.classList.remove("open");
+            activeIndex = -1;
+            return;
+        } else if (e.key === "Escape") {
+            list.classList.remove("open");
+            return;
+        }
+
+        items.forEach((item, i) => {
+            item.classList.toggle("active", i === activeIndex);
+        });
+    });
+
+    document.addEventListener("click", function (e) {
+        if (!input.contains(e.target) && !list.contains(e.target)) {
+            list.classList.remove("open");
+        }
+    });
+}
 
 
 async function loadSessions() {
@@ -263,7 +386,6 @@ async function markCompleted(sessionId, checkbox) {
 async function deleteSubject(subjectId) {
     if (!confirm("Delete this subject? 🗑️")) return;
 
-    // Remove from UI instantly
     const li = document.querySelector(`[data-sid="${String(subjectId)}"]`);
     if (li) {
         li.style.transition = "all 0.3s";
@@ -272,7 +394,6 @@ async function deleteSubject(subjectId) {
         setTimeout(() => li.remove(), 300);
     }
 
-    // Clear timetable instantly
     document.getElementById("timetableContainer").innerHTML = `
         <div class="empty-schedule">
             <i class="fas fa-calendar-alt"></i>
@@ -367,9 +488,6 @@ async function regeneratePlan() {
 }
 
 
-function downloadPlan() {
-    window.location.href = "/api/timetable/export_pdf/";
-}
 // ── CHART MODAL ───────────────────────────────────────
 let chartInstance = null;
 
@@ -391,7 +509,6 @@ async function loadChartData() {
 
         if (sessions.length === 0) return;
 
-        // Group by subject
         const bySubject = {};
         sessions.forEach(s => {
             if (!bySubject[s.subject_name]) {
@@ -401,18 +518,17 @@ async function loadChartData() {
             if (s.completed) bySubject[s.subject_name].completed++;
         });
 
-        const names     = Object.keys(bySubject);
-        const percents  = names.map(n =>
+        const names    = Object.keys(bySubject);
+        const percents = names.map(n =>
             Math.round(bySubject[n].completed / bySubject[n].total * 100)
         );
 
         const colors = [
-            "#ff6b6b", "#52d9a6", "#5eb8ff",
-            "#ffd166", "#a78bfa", "#ff8fab",
-            "#ffa07a", "#47ffd4",
+            "#ff6b6b","#52d9a6","#5eb8ff",
+            "#ffd166","#a78bfa","#ff8fab",
+            "#ffa07a","#47ffd4",
         ];
 
-        // Overall stats
         const total     = sessions.length;
         const completed = sessions.filter(s => s.completed).length;
         const percent   = total ? Math.round(completed / total * 100) : 0;
@@ -423,7 +539,6 @@ async function loadChartData() {
         document.getElementById("mStatPercent").textContent = percent + "%";
         document.getElementById("chartCenterLabel").textContent = percent + "%";
 
-        // Doughnut chart
         const ctx = document.getElementById("progressChart").getContext("2d");
         if (chartInstance) chartInstance.destroy();
 
@@ -456,7 +571,6 @@ async function loadChartData() {
             }
         });
 
-        // Subject bars
         const barsEl = document.getElementById("subjectBars");
         barsEl.innerHTML = "";
         names.forEach((name, i) => {
@@ -479,6 +593,12 @@ async function loadChartData() {
         console.error("Chart error:", err);
     }
 }
+
+
+function downloadPlan() {
+    window.location.href = "/api/timetable/export_pdf/";
+}
+
 
 function getCookie(name) {
     const value = `; ${document.cookie}`;
