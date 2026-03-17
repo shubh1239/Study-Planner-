@@ -1,0 +1,41 @@
+{
+  "python": {
+    "topics": [
+      "Syntax & Basics",
+      "Strings",
+      "Lists & Tuples",
+      "Dictionaries",
+      "Loops",
+      "Functions",
+      "OOP"
+    ]
+  },
+  "java": {
+    "topics": [
+      "Basics",
+      "OOP",
+      "Collections",
+      "Exception Handling",
+      "Multithreading"
+    ]
+  },
+  "data structures": {
+    "topics": [
+      "Arrays",
+      "Linked Lists",
+      "Stacks",
+      "Queues",
+      "Trees",
+      "Graphs"
+    ]
+  },
+  "algorithms": {
+    "topics": [
+      "Sorting",
+      "Searching",
+      "Greedy",
+      "Dynamic Programming",
+      "Backtracking"
+    ]
+  }
+}

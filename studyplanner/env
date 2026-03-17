@@ -1,4 +1,0 @@
-cat > /workspaces/Study-Planner-/studyplanner/.env << EOF
-SECRET_KEY=django-insecure-lnh)x@zyaqxc3i-hb+2axt_yfoo3=5)369^4uy=%rvq5mnpfbp
-DEBUG=True
-EOF
